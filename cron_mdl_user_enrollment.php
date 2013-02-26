@@ -41,7 +41,7 @@ $users = json_decode($curl_result, true);
 $csv_text = '';
 foreach ($users as $user) {
     // figure out if we need to create the user first
-    $existing_user = $mysqli->query($con, 'SELECT * FROM mdl_user WHERE ' .
+    $results = $mysqli->query($con, 'SELECT * FROM mdl_user WHERE ' .
              'email="' . $user["email"] . '" AND ' .
              'password="' . $user["password"] . '" AND ' .
              'firstname="' . $user["firstName"]  . '" AND '.
@@ -50,8 +50,27 @@ foreach ($users as $user) {
              'country="' . $user["country"] . '" AND '.
              'username="' . $user["email"] . '"');
 
-    $results = $mysqli->query('SELECT * FROM mdl_user');
-    echo var_dump($results);
+    // GOING THROUGH THE DATA
+    if($results->num_rows > 0) {
+        while($row = $results->fetch_assoc()) {
+            echo $row['username'] . PHP_EOL;
+        }
+    }
+    else {
+        echo 'Create new user' . PHP_EOL;
+        $date = new DateTime();
+        $now = $date->getTimestamp();
+
+        $qry = $mysqli->prepare('INSERT INTO mdl_user (confirmed,mnethostid,username,password,idnumber,firstname,lastname,email,city,country,timecreated,timemodified) '.
+               'VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
+        echo var_dump($qry);
+        $qry->bind_param("iissssssssii", 1,1,$user["email"],$user["password"],$user["email"],$user['firstName'],$user['lastName'],$user['email'],$user['city'],$user['country'],$now,$now);
+        $qry->execute();
+    }
+    $mysqli->commit();
+
+    $results->close();
+
 
     // build a corresponding line in the csv file for the entry
     $csv_text .= (($user["chosen"])? 'add':'del') . ',';
