@@ -55,17 +55,32 @@ foreach ($users as $user) {
         while($row = $results->fetch_assoc()) {
             echo $row['username'] . PHP_EOL;
         }
-    }
-    else {
-        echo 'Create new user' . PHP_EOL;
+    } else {
         $date = new DateTime();
         $now = $date->getTimestamp();
 
-        $qry = $mysqli->prepare('INSERT INTO mdl_user (confirmed,mnethostid,username,password,idnumber,firstname,lastname,email,city,country,timecreated,timemodified) '.
-               'VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
-        echo var_dump($qry);
-        $qry->bind_param("iissssssssii", 1,1,$user["email"],$user["password"],$user["email"],$user['firstName'],$user['lastName'],$user['email'],$user['city'],$user['country'],$now,$now);
-        $qry->execute();
+        if ($qry = $mysqli->prepare('INSERT INTO mdl_user (confirmed,mnethostid,username,password,idnumber,firstname,lastname,email,city,country,timecreated,timemodified) '.
+               'VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')) {
+            echo 'Create new user' . PHP_EOL;
+
+            $qry->bind_param("iissssssssii", $conf,$mneth,$user,$pass,$id,$first,$last,$email,$city,$coun,$create,$mod);
+            $conf = 1;
+            $mneth = 1;
+            $user = $user["email"];
+            $pass = $user["password"];
+            $id = $user["email"];
+            $first = $user["firstName"];
+            $last = $user["lastName"];
+            $email = $user["email"];
+            $city = $user["city"];
+            $coun = $user["country"];
+            $create = $now;
+            $mod = $now;
+
+            $qry->execute();
+            echo var_dump($qry);
+            $qry->close();
+        }
     }
     $mysqli->commit();
 
