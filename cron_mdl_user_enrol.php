@@ -113,7 +113,7 @@ foreach ($users as $user) {
 
     // build a corresponding line in the csv file for the entry
     $temp = array();
-    $temp[] = (($user["chosen"])? 'add':'del');
+    $temp[] = (($user["chosen"] && !$user["complete"])? 'add':'del');
     $temp[] = 'student';
     $temp[] = $idnumber;
     $temp[] = $course_idnumber;
