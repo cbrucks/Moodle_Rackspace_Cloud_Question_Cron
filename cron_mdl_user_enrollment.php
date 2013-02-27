@@ -43,14 +43,16 @@ foreach ($users as $user) {
     // figure out if we need to create the user first
     $results = $mysqli->query($con, 'SELECT * FROM mdl_user WHERE ' .
              'email="' . $user["email"] . '" ' .
-             'AND password="' . $user["password"] . '" ' .
              'AND firstname="' . $user["firstName"]  . '" ' .
              'AND lastname="' . $user["lastName"] . '" ' .
              'AND city="' . $user["city"] . '" ' .
              'AND country="' . $user["country"] . '" ' .
-             'AND username="' . $user["email"] . '"');
+             'AND username="' . $user["email"] . '" ' .
+             'AND idnumber="' . $user["email"] . '" '
+             );
 
     // GOING THROUGH THE DATA
+    var_dump($results);
     if($results->num_rows > 0) {
         while($row = $results->fetch_assoc()) {
             echo $row['username'] . PHP_EOL;
@@ -67,7 +69,11 @@ foreach ($users as $user) {
             $mneth = 1;
             $username = $user["email"];
             //TODO: need to encrypt the password
-            $pass = $user["password"];
+            if (isset($CFG->passwordsaltmain)) {
+                $pass = md5($user["password"].$CFG->passwordsaltmain);
+            } else {
+                $pass = md5($user["password"]);
+            }
             $id = $user["email"];
             $first = $user["firstName"];
             $last = $user["lastName"];
@@ -76,7 +82,6 @@ foreach ($users as $user) {
             $coun = $user["country"];
             $create = $now;
             $mod = $now;
-            echo $conf . $mneth . $user . $pass . $id;
 
             $qry->bind_param("iissssssssii", $conf,$mneth,$username,$pass,$id,$first,$last,$email,$city,$coun,$create,$mod);
 
