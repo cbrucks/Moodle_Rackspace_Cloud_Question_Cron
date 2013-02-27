@@ -50,7 +50,7 @@ foreach ($users as $user) {
            ' AND `firstname`="'. $user["firstName"] . '"' .
            ' AND `lastname`="'. $user["lastName"] . '"' .
            ' AND `city`="'. $user["city"] . '"' .
-           ' AND `country`="'. $user["country"] . '"' .
+//           ' AND `country`="'. $user["country"] . '"' .
            ' AND `username`="'. $user["email"] . '"' .
            ' AND `idnumber`="' . $user["email"] . '"';
 
