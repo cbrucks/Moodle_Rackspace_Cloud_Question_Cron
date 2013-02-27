@@ -8,6 +8,8 @@ $course_idnumber = '1001';
 $csvFileName = 'enrol.txt';
 
 
+echo PHP_EOL . '$```````````````````` Process Auto Enrol ````````````````````$' . PHP_EOL;
+
 // Connect to the Database
 $mysqli = new mysqli($CFG->dbhost, $CFG->dbuser, $CFG->dbpass, $CFG->dbname);
 
@@ -60,15 +62,40 @@ foreach ($users as $user) {
 
     // Check for existin user account
     if($res->num_rows > 0) {
+        echo 'User already exists: "' . $user['email'] . '"' . PHP_EOL;
+
         // Account exists
         if ($row = $res->fetch_assoc()) {
-            $idnumber = $row["idnumber"];
+            if (!empty($row["idnumber"])) {
+                $idnumber = $row["idnumber"];
+            } else {
+                // TODO: set the user idnumber in the database
+//                $idnumber = $user["email"];
+            }
+
+            // Check if user is already enrolled
+            $sql = 'SELECT * FROM mdl_user_enrolments WHERE ' .
+                   '`userid`="'. $row["id"] . '"';
+                // TODO: check for right course enrollment by using id
+
+            if (! $enrol_res = $mysqli->query($sql)) {
+                die('Error' . $mysqli->error . PHP_EOL);
+                $enrol_res->close();
+            }
+
+            if ($enrol_res->num_rows > 0 && ($user["chosen"] && !$user["complete"])){
+                $enrol_res->close();
+                echo 'User is already enroled' . PHP_EOL;
+                continue;
+            }
+
+            $enrol_res->close();
+
         } else {
-            // TODO: set the user idnumber in the database
-//            $idnumber = $user["email"];
+            die("Could not fetch the row for the user query" . PHP_EOL);
         }
+
         $res->close();
-        echo 'User with username: "' . $user['email'] . '" already exists.' . PHP_EOL;
     } else {
         // Account does not exist so create it
         $res->close();
@@ -103,7 +130,7 @@ foreach ($users as $user) {
                 die('Query Error (' . $qry->errno . ') ' . $qry->error . PHP_EOL);
             }
 
-            echo 'Create new user' . PHP_EOL;
+            echo 'Create new user: "' . $user['email'] . '"' . PHP_EOL;
 
             $idnumber = $user['email'];
 
@@ -114,6 +141,9 @@ foreach ($users as $user) {
     // build a corresponding line in the csv file for the entry
     $temp = array();
     $temp[] = (($user["chosen"] && !$user["complete"])? 'add':'del');
+
+    echo $temp[0] . ' user' . PHP_EOL;
+
     $temp[] = 'student';
     $temp[] = $idnumber;
     $temp[] = $course_idnumber;
@@ -134,5 +164,8 @@ if ($fp = fopen($file, 'w')) {
 
 
 $mysqli->close();
+
+echo '$``````````````````````````` Done ```````````````````````````$' . PHP_EOL . PHP_EOL;
+
 
 ?>
