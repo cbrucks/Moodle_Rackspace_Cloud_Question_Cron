@@ -2,9 +2,11 @@
 define('CLI_SCRIPT', true);
 require '/var/www/config.php'; // Access Moodle Database login info
 
-$log = '';
 
+// User defined variables
 $course_idnumber = 'autoenroll';
+$csvFileName = 'enrol.txt';
+
 
 // Connect to the Database
 $mysqli = new mysqli($CFG->dbhost, $CFG->dbuser, $CFG->dbpass, $CFG->dbname);
@@ -38,33 +40,44 @@ curl_close($curl_ch);
 $users = json_decode($curl_result, true);
 
 // go through each user
-$csv_text = '';
+$csv_text = array();
 foreach ($users as $user) {
-    // figure out if we need to create the user first
-    $results = $mysqli->query($con, 'SELECT * FROM mdl_user WHERE ' .
-             'email="' . $user["email"] . '" ' .
-             'AND firstname="' . $user["firstName"]  . '" ' .
-             'AND lastname="' . $user["lastName"] . '" ' .
-             'AND city="' . $user["city"] . '" ' .
-             'AND country="' . $user["country"] . '" ' .
-             'AND username="' . $user["email"] . '" ' .
-             'AND idnumber="' . $user["email"] . '" '
-             );
+    $idnumber = '';
 
-    // GOING THROUGH THE DATA
-    var_dump($results);
-    if($results->num_rows > 0) {
-        while($row = $results->fetch_assoc()) {
-            echo $row['username'] . PHP_EOL;
+    // figure out if we need to create the user first
+    $sql = 'SELECT * FROM mdl_user WHERE ' .
+           '`email`="'. $user["email"] . '"' .
+           ' AND `firstname`="'. $user["firstName"] . '"' .
+           ' AND `lastname`="'. $user["lastName"] . '"' .
+           ' AND `city`="'. $user["city"] . '"' .
+           ' AND `country`="'. $user["country"] . '"' .
+           ' AND `username`="'. $user["email"] . '"' .
+           ' AND `idnumber`="' . $user["email"] . '"';
+
+    if (! $res = $mysqli->query($sql)) {
+        die('Error' . $mysqli->error . PHP_EOL);
+    }
+
+    // Check for existin user account
+    if($res->num_rows > 0) {
+        // Account exists
+        if ($row = $res->fetch_assoc()) {
+            $idnumber = $row["idnumber"];
+        } else {
+            // TODO: set the user idnumber in the database
+//            $idnumber = $user["email"];
         }
+        $res->close();
+        echo 'User with username: "' . $user['email'] . '" already exists.' . PHP_EOL;
     } else {
+        // Account does not exist so create it
+        $res->close();
+
         $date = new DateTime();
         $now = $date->getTimestamp();
 
         $sql = 'INSERT INTO `mdl_user` SET `confirmed`=?,`mnethostid`=?,`username`=?,`password`=?,`idnumber`=?,`firstname`=?,`lastname`=?,`email`=?,`city`=?,`country`=?,`timecreated`=?,`timemodified`=?';
         if ($qry = $mysqli->prepare($sql)) {
-            echo 'Create new user' . PHP_EOL;
-
             $conf = 1;
             $mneth = 1;
             $username = $user["email"];
@@ -87,26 +100,38 @@ foreach ($users as $user) {
 
             $qry->execute();
             if ($qry->errno) {
-                echo "ERROR: " . $qry->error . PHP_EOL;
-                return;
+                die('Query Error (' . $qry->errno . ') ' . $qry->error . PHP_EOL);
             }
+
+            echo 'Create new user' . PHP_EOL;
+
+            $idnumber = $user['email'];
 
             $qry->close();
         }
     }
-    $mysqli->commit();
-
-    $results->close();
-
 
     // build a corresponding line in the csv file for the entry
-    $csv_text .= (($user["chosen"])? 'add':'del') . ',';
-    $csv_text .= 'student,';
-    $csv_text .= $user["email"] . ',';
-    $csv_text .= $course_idnumber . PHP_EOL;
+    $temp = array();
+    $temp[] = (($user["chosen"])? 'add':'del');
+    $temp[] = 'student';
+    $temp[] = $idnumber;
+    $temp[] = $course_idnumber;
+    $csv_text[] = $temp;
 }
 
-echo $csv_text;
+$file = $CFG->dataroot . '/' . $csvFileName;
+if ($fp = fopen($file, 'w')) {
+    echo 'Writing CSV file' . PHP_EOL;
+    foreach ($csv_text as $line) {
+        fputcsv($fp, $line);
+    }
+    fclose($fp);
+} else {
+    die('Could not creat csv file at ' . $file);
+}
+
+
 
 $mysqli->close();
 
