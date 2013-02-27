@@ -4,7 +4,7 @@ require '/var/www/config.php'; // Access Moodle Database login info
 
 
 // User defined variables
-$course_idnumber = 'autoenrol';
+$course_idnumber = '1001';
 $csvFileName = 'enrol.txt';
 
 
