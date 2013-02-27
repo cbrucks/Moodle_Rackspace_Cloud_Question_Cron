@@ -42,13 +42,13 @@ $csv_text = '';
 foreach ($users as $user) {
     // figure out if we need to create the user first
     $results = $mysqli->query($con, 'SELECT * FROM mdl_user WHERE ' .
-             'email="' . $user["email"] . '" AND ' .
-             'password="' . $user["password"] . '" AND ' .
-             'firstname="' . $user["firstName"]  . '" AND '.
-             'lastname="' . $user["lastName"] . '" AND '.
-             'city="' . $user["city"] . '" AND '.
-             'country="' . $user["country"] . '" AND '.
-             'username="' . $user["email"] . '"');
+             'email="' . $user["email"] . '" ' .
+             'AND password="' . $user["password"] . '" ' .
+             'AND firstname="' . $user["firstName"]  . '" ' .
+             'AND lastname="' . $user["lastName"] . '" ' .
+             'AND city="' . $user["city"] . '" ' .
+             'AND country="' . $user["country"] . '" ' .
+             'AND username="' . $user["email"] . '"');
 
     // GOING THROUGH THE DATA
     if($results->num_rows > 0) {
@@ -59,14 +59,14 @@ foreach ($users as $user) {
         $date = new DateTime();
         $now = $date->getTimestamp();
 
-        if ($qry = $mysqli->prepare('INSERT INTO mdl_user (confirmed,mnethostid,username,password,idnumber,firstname,lastname,email,city,country,timecreated,timemodified) '.
-               'VALUES (?,?,?,?,?,?,?,?,?,?,?,?)')) {
+        $sql = 'INSERT INTO `mdl_user` SET `confirmed`=?,`mnethostid`=?,`username`=?,`password`=?,`idnumber`=?,`firstname`=?,`lastname`=?,`email`=?,`city`=?,`country`=?,`timecreated`=?,`timemodified`=?';
+        if ($qry = $mysqli->prepare($sql)) {
             echo 'Create new user' . PHP_EOL;
 
-            $qry->bind_param("iissssssssii", $conf,$mneth,$user,$pass,$id,$first,$last,$email,$city,$coun,$create,$mod);
             $conf = 1;
             $mneth = 1;
-            $user = $user["email"];
+            $username = $user["email"];
+            //TODO: need to encrypt the password
             $pass = $user["password"];
             $id = $user["email"];
             $first = $user["firstName"];
@@ -76,9 +76,16 @@ foreach ($users as $user) {
             $coun = $user["country"];
             $create = $now;
             $mod = $now;
+            echo $conf . $mneth . $user . $pass . $id;
+
+            $qry->bind_param("iissssssssii", $conf,$mneth,$username,$pass,$id,$first,$last,$email,$city,$coun,$create,$mod);
 
             $qry->execute();
-            echo var_dump($qry);
+            if ($qry->errno) {
+                echo "ERROR: " . $qry->error . PHP_EOL;
+                return;
+            }
+
             $qry->close();
         }
     }
